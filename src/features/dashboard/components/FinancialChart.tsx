@@ -18,11 +18,13 @@ const SERIES = [
 /** El texto de la leyenda usa el color de tinta; el color de la serie va en el icono. */
 const legendLabel = (value: string) => <span style={{ color: 'var(--color-ink)' }}>{value}</span>
 
-const tooltipValue = (value: unknown): string => (typeof value === 'number' ? formatCurrency(value) : String(value))
+const tooltipValue = (value: unknown): string =>
+  typeof value === 'number' && Number.isFinite(value) ? formatCurrency(value) : t('charts.noFinancialData')
 
 /** Barras horizontales agrupadas: legibles en móvil y con zonas de nombre largo. */
 export function FinancialChart({ data }: FinancialChartProps) {
-  if (data.length === 0) return <EmptyState title={t('charts.empty')} />
+  const hasAmounts = data.some((group) => group.income !== null || group.cost !== null || group.margin !== null)
+  if (!hasAmounts) return <EmptyState title={t('charts.empty')} />
 
   const rows = data.map((group) => ({ ...group, name: group.key ?? t('charts.noValue') }))
   const height = Math.max(CHART_LAYOUT.minHeight, rows.length * CHART_LAYOUT.rowHeight + 60)

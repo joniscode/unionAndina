@@ -2,6 +2,7 @@ import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
 import { t } from '../../../lib/i18n'
 import type { ImportError } from '../../../types/operation'
+import { importLimitParams } from '../validators/validateStructure'
 
 interface ImportErrorPanelProps {
   fileName: string
@@ -18,7 +19,11 @@ function describeError(error: ImportError): string {
         ? t('errors.missingColumns', { sheetName: error.sheetName, count: missing })
         : t('errors.missingColumnsNoSheet', { count: missing })
     case 'emptyFile':
-      return t('errors.emptyFile', { sheetName: error.sheetName ?? '' })
+    case 'noUsableRecords':
+      return t(`errors.${error.code}`, { sheetName: error.sheetName ?? '' })
+    case 'fileTooLarge':
+    case 'tooManyRecords':
+      return t(`errors.${error.code}`, { ...importLimitParams(), sheetName: error.sheetName ?? '' })
     default:
       return t(`errors.${error.code}`)
   }

@@ -34,7 +34,7 @@ describe('aplicación de filtros', () => {
   it('filtrar por cliente recalcula los indicadores solo con sus operaciones', () => {
     const filtered = applyFilters(records, { ...EMPTY_FILTERS, client: 'Cliente A' })
     expect(filtered.map((r) => r.id)).toEqual(['OP-1', 'OP-3'])
-    expect(computeKpis(filtered).financial.income).toBe(400)
+    expect(computeKpis(filtered).financial.income.value).toBe(400)
   })
 
   it('filtrar por zona muestra únicamente sus registros', () => {

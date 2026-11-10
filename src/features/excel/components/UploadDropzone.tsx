@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/Button'
 import { IconFile, IconUpload } from '../../../components/ui/icons'
 import { ACCEPTED_EXTENSIONS } from '../../../config/dataContract'
 import { t } from '../../../lib/i18n'
+import { importLimitParams } from '../validators/validateStructure'
 
 interface UploadDropzoneProps {
   onFile: (file: File) => void
@@ -53,7 +54,7 @@ export function UploadDropzone({ onFile, onDemo, disabled = false }: UploadDropz
           <IconFile width={18} height={18} />
           {t('upload.selectFile')}
         </span>
-        <span className="text-xs text-ink-subtle">{t('upload.acceptedFormat')}</span>
+        <span className="text-xs text-ink-subtle">{t('upload.acceptedFormat', importLimitParams())}</span>
         <input
           id={inputId}
           type="file"

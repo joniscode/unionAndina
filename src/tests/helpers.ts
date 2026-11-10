@@ -2,15 +2,19 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { utils, write } from 'xlsx'
 import { COLUMNS, REQUIRED_COLUMNS } from '../config/dataContract'
-import { processWorkbook } from '../features/excel/services/processWorkbook'
+import { processWorkbook, type ProcessOptions } from '../features/excel/services/processWorkbook'
 import type { ImportPreview, OperationRecord } from '../types/operation'
 
 export const DEMO_FILE = resolve(process.cwd(), 'public/demo/datos-sinteticos-unatrans.xlsx')
+export const SCENARIO_1 = resolve(process.cwd(), 'src/tests/fixtures/Escenario_1_Reemplazo_Ciudades_Validas.xlsx')
+export const SCENARIO_2 = resolve(process.cwd(), 'src/tests/fixtures/Escenario_2_Duplicados_Campos_Erroneos.xlsx')
 
-export function readDemoFile(): ArrayBuffer {
-  const buffer = readFileSync(DEMO_FILE)
+export function readFixture(path: string): ArrayBuffer {
+  const buffer = readFileSync(path)
   return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer
 }
+
+export const readDemoFile = (): ArrayBuffer => readFixture(DEMO_FILE)
 
 type RowValues = Partial<Record<(typeof COLUMNS)[keyof typeof COLUMNS], unknown>>
 
@@ -29,7 +33,7 @@ const BASE_ROW: RowValues = {
   [COLUMNS.sla]: 'Sí',
   [COLUMNS.income]: 1000,
   [COLUMNS.cost]: 600,
-  [COLUMNS.margin]: 400,
+  [COLUMNS.reportedMargin]: 400,
   [COLUMNS.rating]: 4,
 }
 
@@ -53,8 +57,8 @@ export function buildDataWorkbook(rows: unknown[][], extraSheets: Record<string,
 }
 
 /** Procesa un libro y falla el test si no es válido. */
-export function previewOf(data: ArrayBuffer, fileName = 'prueba.xlsx'): ImportPreview {
-  const outcome = processWorkbook(data, fileName)
+export function previewOf(data: ArrayBuffer, fileName = 'prueba.xlsx', options: ProcessOptions = {}): ImportPreview {
+  const outcome = processWorkbook(data, fileName, options)
   if (!outcome.ok) throw new Error(`Importación inesperadamente inválida: ${outcome.error.code}`)
   return outcome.preview
 }
@@ -77,7 +81,7 @@ export function makeRecord(overrides: Partial<OperationRecord> = {}): OperationR
     slaRaw: 'Sí',
     income: 1000,
     cost: 600,
-    margin: 400,
+    reportedMargin: 400,
     rating: null,
     ...overrides,
   }

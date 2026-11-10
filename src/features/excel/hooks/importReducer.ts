@@ -34,8 +34,7 @@ export function toDataset(preview: ImportPreview, loadedAt: number): Dataset {
     fileName: preview.fileName,
     sheetName: preview.sheetName,
     records: preview.records,
-    rowsRead: preview.rowsRead,
-    duplicatesDiscarded: preview.duplicatesDiscarded,
+    summary: preview.summary,
     source: preview.source,
     loadedAt,
   }

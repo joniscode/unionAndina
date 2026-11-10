@@ -6,28 +6,37 @@ export interface DeduplicateResult {
   discarded: number
 }
 
+/** Compara el contenido de dos registros sin tener en cuenta la fila de origen. */
+export function sameContent(a: OperationRecord, b: OperationRecord): boolean {
+  const keys = Object.keys(a) as (keyof OperationRecord)[]
+  return keys.every((key) => key === 'rowNumber' || a[key] === b[key])
+}
+
 /**
- * Conserva la primera aparición de cada ID_Operacion y descarta las siguientes.
- * Los registros sin identificador no se agrupan entre sí: cada uno se conserva.
+ * Conserva la primera aparición de cada ID_Operacion y descarta las siguientes
+ * (el contrato define el ID como identificador único de la operación).
+ * Si una aparición posterior tiene contenido distinto, se reporta como conflicto.
+ * Los registros sin identificador no se agrupan entre sí.
  */
 export function deduplicate(records: readonly OperationRecord[]): DeduplicateResult {
   const unique: OperationRecord[] = []
+  const firstById = new Map<string, OperationRecord>()
   const groups = new Map<string, DuplicateGroup>()
-  const firstRowById = new Map<string, number>()
 
   for (const record of records) {
     if (record.id === null) {
       unique.push(record)
       continue
     }
-    const keptRow = firstRowById.get(record.id)
-    if (keptRow === undefined) {
-      firstRowById.set(record.id, record.rowNumber)
+    const first = firstById.get(record.id)
+    if (!first) {
+      firstById.set(record.id, record)
       unique.push(record)
       continue
     }
-    const group = groups.get(record.id) ?? { id: record.id, keptRow, discardedRows: [] }
+    const group = groups.get(record.id) ?? { id: record.id, keptRow: first.rowNumber, discardedRows: [], conflictingRows: [] }
     group.discardedRows.push(record.rowNumber)
+    if (!sameContent(first, record)) group.conflictingRows.push(record.rowNumber)
     groups.set(record.id, group)
   }
 

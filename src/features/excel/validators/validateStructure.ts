@@ -1,6 +1,9 @@
-import { ACCEPTED_EXTENSIONS, COLUMNS, REQUIRED_COLUMNS, type ColumnKey } from '../../../config/dataContract'
+import { ACCEPTED_EXTENSIONS, COLUMNS, IMPORT_LIMITS, REQUIRED_COLUMNS, type ColumnKey } from '../../../config/dataContract'
+import { formatDecimal, formatInteger } from '../../../lib/format'
 import { parseText } from '../../../lib/parse'
 import type { RawSheet } from '../services/readWorkbook'
+
+const BYTES_PER_MB = 1024 * 1024
 
 export type ColumnIndex = Record<ColumnKey, number>
 
@@ -11,6 +14,19 @@ export type StructureResult =
 export function hasAcceptedExtension(fileName: string): boolean {
   const lower = fileName.toLowerCase()
   return ACCEPTED_EXTENSIONS.some((extension) => lower.endsWith(extension))
+}
+
+/** Parámetros de texto para mostrar los límites de importación. */
+export function importLimitParams(): { maxMb: string; maxRecords: string } {
+  return {
+    maxMb: formatDecimal(IMPORT_LIMITS.maxFileBytes / BYTES_PER_MB),
+    maxRecords: formatInteger(IMPORT_LIMITS.maxRecords),
+  }
+}
+
+/** Se comprueba antes de leer el archivo para no cargar en memoria archivos excesivos. */
+export function exceedsFileSize(bytes: number, maxBytes: number = IMPORT_LIMITS.maxFileBytes): boolean {
+  return bytes > maxBytes
 }
 
 function readHeaders(sheet: RawSheet): (string | null)[] {

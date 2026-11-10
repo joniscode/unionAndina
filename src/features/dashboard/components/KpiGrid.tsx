@@ -1,6 +1,6 @@
 import { formatCurrency, formatInteger, formatPercent } from '../../../lib/format'
-import { t } from '../../../lib/i18n'
-import type { Kpis } from '../../../lib/metrics'
+import { t, type TextKey } from '../../../lib/i18n'
+import type { AmountTotal, Kpis } from '../../../lib/metrics'
 import { KpiCard } from './KpiCard'
 
 interface KpiGridProps {
@@ -8,45 +8,60 @@ interface KpiGridProps {
   totalRecords: number
 }
 
+const NOT_AVAILABLE = t('dashboard.notAvailable')
+
+const money = (amount: AmountTotal): string => (amount.value === null ? NOT_AVAILABLE : formatCurrency(amount.value))
+
+/** Aviso de base parcial: solo cuando el total no incluye todas las operaciones filtradas. */
+function baseNote(amount: AmountTotal, operations: number, key: TextKey = 'dashboard.basePartial'): string | undefined {
+  if (amount.records === operations || amount.records === 0) return undefined
+  return t(key, { count: formatInteger(amount.records), total: formatInteger(operations) })
+}
+
 export function KpiGrid({ kpis, totalRecords }: KpiGridProps) {
-  const { financial, sla } = kpis
-  const notAvailable = t('dashboard.notAvailable')
-  const negativeMargin = financial.margin < 0
+  const { financial, sla, totalOperations } = kpis
+  const { income, cost, margin, marginPct } = financial
+
+  const marginHint =
+    margin.value === null
+      ? t('dashboard.marginNoData')
+      : marginPct === null
+        ? t('dashboard.marginPctUnavailable')
+        : t('dashboard.marginHint', { pct: formatPercent(marginPct) })
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <KpiCard
         label={t('dashboard.totalOperations')}
-        value={formatInteger(kpis.totalOperations)}
+        value={formatInteger(totalOperations)}
         hint={t('dashboard.totalOperationsHint', { total: formatInteger(totalRecords) })}
         accent="bg-brand-dark"
       />
       <KpiCard
         label={t('dashboard.income')}
-        value={formatCurrency(financial.income)}
-        hint={t('dashboard.incomeHint')}
+        value={money(income)}
+        hint={income.value === null ? t('dashboard.noData') : t('dashboard.incomeHint')}
+        note={baseNote(income, totalOperations)}
         accent="bg-chart-income"
       />
       <KpiCard
         label={t('dashboard.costs')}
-        value={formatCurrency(financial.cost)}
-        hint={t('dashboard.costsHint')}
+        value={money(cost)}
+        hint={cost.value === null ? t('dashboard.noData') : t('dashboard.costsHint')}
+        note={baseNote(cost, totalOperations)}
         accent="bg-chart-cost"
       />
       <KpiCard
         label={t('dashboard.margin')}
-        value={formatCurrency(financial.margin)}
-        valueClassName={negativeMargin ? 'text-danger' : 'text-ink'}
-        hint={
-          financial.marginPct === null
-            ? t('dashboard.marginHintUnavailable')
-            : t('dashboard.marginHint', { pct: formatPercent(financial.marginPct) })
-        }
+        value={money(margin)}
+        valueClassName={margin.value !== null && margin.value < 0 ? 'text-danger' : 'text-ink'}
+        hint={marginHint}
+        note={baseNote(margin, totalOperations, 'dashboard.marginBasePartial')}
         accent="bg-chart-margin"
       />
       <KpiCard
         label={t('dashboard.sla')}
-        value={sla.pct === null ? notAvailable : formatPercent(sla.pct)}
+        value={sla.pct === null ? NOT_AVAILABLE : formatPercent(sla.pct)}
         hint={
           sla.pct === null
             ? t('dashboard.slaUnavailable')

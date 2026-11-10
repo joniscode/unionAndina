@@ -3,7 +3,7 @@ import { Button } from '../../../components/ui/Button'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { SECTION_IDS } from '../../../config/sections'
-import { formatInteger } from '../../../lib/format'
+import { hasIncompleteFinancials } from '../../../lib/metrics'
 import { t } from '../../../lib/i18n'
 import type { Dataset } from '../../../types/operation'
 import { FiltersBar } from '../../filters/components/FiltersBar'
@@ -42,9 +42,7 @@ export function Dashboard({ dataset }: DashboardProps) {
           <p className="text-sm text-ink-muted">{t('dashboard.subtitle')}</p>
         </div>
         <KpiGrid kpis={kpis} totalRecords={dataset.records.length} />
-        {kpis.excludedFromFinancials > 0 && (
-          <Alert tone="warning" title={t('dashboard.financialExcluded', { count: formatInteger(kpis.excludedFromFinancials) })} />
-        )}
+        {hasIncompleteFinancials(kpis.financial) && <Alert tone="warning" title={t('dashboard.incompleteFinancials')} />}
       </section>
 
       {hasResults ? (

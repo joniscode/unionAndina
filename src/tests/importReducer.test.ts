@@ -72,7 +72,7 @@ describe('flujo de importación', () => {
 
 describe('datos de demostración', () => {
   it('restablece la demo reemplazando los datos cargados y la marca como demostración', () => {
-    const demo = processWorkbook(readDemoFile(), 'demo.xlsx', 'demo')
+    const demo = processWorkbook(readDemoFile(), 'demo.xlsx', { source: 'demo' })
     const afterB = load(initialImportState, fileB, 1)
     const restored = load(afterB, demo, 2)
     expect(restored.active?.source).toBe('demo')

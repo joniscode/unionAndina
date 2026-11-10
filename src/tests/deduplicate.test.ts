@@ -13,10 +13,10 @@ describe('detección de duplicados', () => {
         makeRow({ ID_Operacion: 'OP-1' }),
       ]),
     )
-    expect(preview.rowsRead).toBe(4)
+    expect(preview.summary.rowsRead).toBe(4)
     expect(preview.records).toHaveLength(2)
-    expect(preview.duplicatesDiscarded).toBe(2)
-    expect(preview.duplicates).toEqual([{ id: 'OP-1', keptRow: 2, discardedRows: [4, 5] }])
+    expect(preview.summary.duplicatesDiscarded).toBe(2)
+    expect(preview.duplicates).toEqual([{ id: 'OP-1', keptRow: 2, discardedRows: [4, 5], conflictingRows: [] }])
   })
 
   it('conserva la primera aparición de la operación', () => {
@@ -43,6 +43,27 @@ describe('detección de duplicados', () => {
     )
     const kpis = computeKpis(preview.records)
     expect(kpis.totalOperations).toBe(1)
-    expect(kpis.financial.income).toBe(1000)
+    expect(kpis.financial.income.value).toBe(1000)
+  })
+
+  it('advierte cuando un duplicado tiene contenido diferente (riesgo de pérdida de registro legítimo)', () => {
+    const preview = previewOf(
+      buildDataWorkbook([
+        makeRow({ ID_Operacion: 'OP-1', Ingresos_COP: 1000 }),
+        makeRow({ ID_Operacion: 'OP-1', Ingresos_COP: 1000 }),
+        makeRow({ ID_Operacion: 'OP-1', Ingresos_COP: 5000, Margen_COP: 4400 }),
+      ]),
+    )
+    expect(preview.duplicates).toEqual([{ id: 'OP-1', keptRow: 2, discardedRows: [3, 4], conflictingRows: [4] }])
+    expect(preview.summary.warnings).toBe(1)
+    expect(preview.records[0]?.income).toBe(1000)
+  })
+
+  it('los registros sin identificador no se agrupan y se excluyen por error', () => {
+    const preview = previewOf(
+      buildDataWorkbook([makeRow({ ID_Operacion: 'OP-1' }), makeRow({ ID_Operacion: null }), makeRow({ ID_Operacion: '  ' })]),
+    )
+    expect(preview.summary).toMatchObject({ uniqueRecords: 3, excludedRecords: 2, usableRecords: 1, errors: 2, duplicatesDiscarded: 0 })
+    expect(preview.records.map((r) => r.id)).toEqual(['OP-1'])
   })
 })

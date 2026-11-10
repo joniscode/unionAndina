@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { APP_CONFIG } from '../../../config/app'
 import type { DatasetSource, ImportOutcome } from '../../../types/operation'
-import { hasAcceptedExtension } from '../validators/validateStructure'
+import type { ImportErrorCode } from '../../../types/operation'
+import { exceedsFileSize, hasAcceptedExtension } from '../validators/validateStructure'
 import { importReducer, initialImportState } from './importReducer'
 
 /** Cede el hilo principal para que el indicador de carga se pinte antes del procesamiento. */
@@ -26,7 +27,7 @@ export function useExcelImport() {
       const [data, { processWorkbook }] = await Promise.all([load(), import('../services/processWorkbook')])
       dispatch({ type: 'read', requestId })
       await yieldToBrowser()
-      outcome = processWorkbook(data, fileName, source)
+      outcome = processWorkbook(data, fileName, { source })
     } catch {
       outcome = { ok: false, error: { code: source === 'demo' ? 'demoUnavailable' : 'unreadable' } }
     }
@@ -35,10 +36,16 @@ export function useExcelImport() {
 
   const importFile = useCallback(
     (file: File) => {
-      if (!hasAcceptedExtension(file.name)) {
+      // Validaciones previas a la lectura: evitan cargar en memoria archivos no admitidos.
+      const precheck: ImportErrorCode | null = !hasAcceptedExtension(file.name)
+        ? 'invalidExtension'
+        : exceedsFileSize(file.size)
+          ? 'fileTooLarge'
+          : null
+      if (precheck) {
         const requestId = ++requestCounter.current
         dispatch({ type: 'start', fileName: file.name, requestId })
-        dispatch({ type: 'processed', requestId, outcome: { ok: false, error: { code: 'invalidExtension' } } })
+        dispatch({ type: 'processed', requestId, outcome: { ok: false, error: { code: precheck } } })
         return
       }
       void run(file.name, 'upload', () => file.arrayBuffer())

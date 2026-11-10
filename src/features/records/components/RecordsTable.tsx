@@ -1,12 +1,15 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Badge } from '../../../components/ui/Badge'
 import { EmptyState } from '../../../components/ui/EmptyState'
-import { IconSearch } from '../../../components/ui/icons'
+import { IconSearch, IconWarning } from '../../../components/ui/icons'
 import { Panel } from '../../../components/ui/Panel'
 import { APP_CONFIG } from '../../../config/app'
+import { MARGIN_TOLERANCE_COP } from '../../../config/dataContract'
 import { toneForSla, toneForStatus } from '../../../config/statusTones'
 import { searchById } from '../../../lib/filters'
-import { formatCurrency, formatDate, formatInteger } from '../../../lib/format'
+import { formatIsoDate } from '../../../lib/dates'
+import { formatCurrency, formatInteger } from '../../../lib/format'
+import { calculatedMargin } from '../../../lib/metrics'
 import { t, type TextKey } from '../../../lib/i18n'
 import type { OperationRecord } from '../../../types/operation'
 import { Pagination } from './Pagination'
@@ -20,6 +23,27 @@ const EMPTY = t('table.emptyCell')
 const text = (value: string | null): string => value ?? EMPTY
 const money = (value: number | null): string => (value === null ? EMPTY : formatCurrency(value))
 
+/**
+ * Muestra el margen calculado (Ingresos − Costos), el mismo criterio de los indicadores.
+ * Si el Margen_COP informado difiere, se señala con icono y texto accesible.
+ */
+function MarginCell({ record }: { record: OperationRecord }) {
+  const margin = calculatedMargin(record)
+  if (margin === null) {
+    return <span title={t('table.marginUnavailable')} aria-label={t('table.marginUnavailable')}>{EMPTY}</span>
+  }
+  const reported = record.reportedMargin
+  const differs = reported !== null && Math.abs(reported - margin) > MARGIN_TOLERANCE_COP
+  const label = differs ? t('table.marginMismatchLabel', { value: formatCurrency(reported) }) : undefined
+  return (
+    <span className={`inline-flex items-center gap-1 ${margin < 0 ? 'text-danger' : ''}`} title={label}>
+      {differs && <IconWarning width={14} height={14} className="text-warning" aria-hidden="true" />}
+      {formatCurrency(margin)}
+      {label && <span className="sr-only">. {label}</span>}
+    </span>
+  )
+}
+
 interface Column {
   label: TextKey
   numeric?: boolean
@@ -28,7 +52,7 @@ interface Column {
 
 const COLUMNS: Column[] = [
   { label: 'table.columns.id', render: (r) => <span className="font-semibold text-ink">{text(r.id)}</span> },
-  { label: 'table.columns.date', render: (r) => (r.date ? formatDate(r.date) : EMPTY) },
+  { label: 'table.columns.date', render: (r) => (r.date ? formatIsoDate(r.date) : EMPTY) },
   { label: 'table.columns.zone', render: (r) => text(r.zone) },
   { label: 'table.columns.route', render: (r) => text(r.route) },
   { label: 'table.columns.client', render: (r) => text(r.client) },
@@ -46,7 +70,7 @@ const COLUMNS: Column[] = [
   {
     label: 'table.columns.margin',
     numeric: true,
-    render: (r) => <span className={r.margin !== null && r.margin < 0 ? 'text-danger' : ''}>{money(r.margin)}</span>,
+    render: (r) => <MarginCell record={r} />,
   },
 ]
 

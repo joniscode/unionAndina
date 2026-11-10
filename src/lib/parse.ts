@@ -7,7 +7,6 @@ export interface ParseResult<T> {
 }
 
 const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
 const EMPTY: ParseResult<never> = { value: null, invalid: false }
 
 /** Minúsculas, sin tildes ni espacios redundantes. */
@@ -26,40 +25,20 @@ export function isBlank(value: unknown): boolean {
 
 export function parseText(value: unknown): string | null {
   if (isBlank(value)) return null
-  if (value instanceof Date) return value.toISOString()
   return String(value).trim()
 }
 
 /**
  * Acepta números de Excel o texto numérico plano ("1500", "-20.5").
- * Cualquier otro contenido se marca como inválido: nunca se convierte en cero.
+ * Todo resultado se valida con Number.isFinite: NaN o Infinity se marcan como inválidos.
+ * Un valor inválido nunca se convierte en cero.
  */
 export function parseNumber(value: unknown): ParseResult<number> {
   if (isBlank(value)) return EMPTY
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? { value, invalid: false } : { value: null, invalid: true }
-  }
-  if (typeof value === 'string' && PLAIN_NUMBER.test(value.trim())) {
-    return { value: Number(value.trim()), invalid: false }
-  }
-  return { value: null, invalid: true }
-}
-
-export function parseDate(value: unknown): ParseResult<Date> {
-  if (isBlank(value)) return EMPTY
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? { value: null, invalid: true } : { value, invalid: false }
-  }
-  if (typeof value === 'string') {
-    const match = ISO_DATE.exec(value.trim())
-    if (match) {
-      const [year, month, day] = match.slice(1).map(Number)
-      if (year !== undefined && month !== undefined && day !== undefined) {
-        return { value: new Date(year, month - 1, day), invalid: false }
-      }
-    }
-  }
-  return { value: null, invalid: true }
+  let candidate: number | null = null
+  if (typeof value === 'number') candidate = value
+  else if (typeof value === 'string' && PLAIN_NUMBER.test(value.trim())) candidate = Number(value.trim())
+  return candidate !== null && Number.isFinite(candidate) ? { value: candidate, invalid: false } : { value: null, invalid: true }
 }
 
 export interface SlaResult {
