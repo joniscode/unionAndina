@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens centralizados. Tailwind v4 genera utilidades a partir de @theme
+ * (bg-brand, text-danger, border-line…) y expone cada valor como variable CSS.
+ */
+@theme {
+  /* Identidad corporativa */
+  --color-brand: #008d36;
+  --color-brand-dark: #006633;
+  --color-brand-yellow: #ffca00;
+  --color-brand-orange: #f6a400;
+  --color-brand-soft: #e7f4ec;
+
+  /* Superficies y texto */
+  --color-canvas: #f4f6f4;
+  --color-surface: #ffffff;
+  --color-line: #dfe5e1;
+  --color-ink: #16211b;
+  --color-ink-muted: #56635c;
+  --color-ink-subtle: #7b8781;
+
+  /* Colores funcionales (siempre acompañados de texto o icono) */
+  --color-success: #0f7a3a;
+  --color-success-soft: #e6f4ec;
+  --color-warning: #9a5b00;
+  --color-warning-soft: #fff4d6;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --color-info: #1d5bbf;
+  --color-info-soft: #e7effc;
+  --color-neutral: #4a5560;
+  --color-neutral-soft: #eef1f0;
+
+  /* Series de gráficos (validadas para daltonismo; ver README) */
+  --color-chart-income: #00843a;
+  --color-chart-cost: #e39400;
+  --color-chart-margin: #4a6fe3;
+  --color-chart-grid: #e6ebe8;
+
+  --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
